@@ -8,14 +8,12 @@ U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, -1, A5, A4);
 #define BTN_PLAYER_1_UP 6
 #define BTN_PLAYER_1_RIGHT 10
 #define BTN_PLAYER_1_LEFT 7
-#define BTN_PLAYER_1_JUMP 13
 
 #define BTN_PLAYER_2_ACTION 2
 #define BTN_PLAYER_2_UP 11
 #define BTN_PLAYER_2_DOWN 3
 #define BTN_PLAYER_2_RIGHT 8
 #define BTN_PLAYER_2_LEFT 5
-#define BTN_PLAYER_2_JUMP 4
 
 // ===== DISPLAY CONSTANTS =====
 #define SCREEN_WIDTH 128
@@ -32,9 +30,13 @@ bool game_over = false;
 bool game_first_draw = true;
 bool gameover_first_draw = true;
 
+// Idk 
+#define walking_speed 2 //2px/ frame
+
 // ===== ANIMATION METADATA =====
 unsigned long player_1_last_frame_time = 0;
 uint8_t player_1_current_frame = 0; 
+
 
 // ===== SPRITE'S BITMAP ======
 
@@ -64,6 +66,30 @@ const unsigned char player_walking_right_foot_up_pose_bits[] PROGMEM = {
   0xE6, 0x08, 0xA2, 0x08, 0x51, 0x04, 0x49, 0x04, 0x4F, 0x02, 0xC9, 0x03, 
   0x53, 0x04, 0xDE, 0x07,  };
 
+// ===== front kick first frame (13 * 26) =====
+const unsigned char front_kick_first_frame_bits[] PROGMEM = {
+  0xFC, 0x03, 0xFE, 0x01, 0x1E, 0x01, 0x4E, 0x01, 0x06, 0x03, 0x04, 0x01, 
+  0xC6, 0x01, 0x4A, 0x01, 0x53, 0x1F, 0x21, 0x13, 0xE5, 0x1E, 0xB9, 0x03, 
+  0xA3, 0x00, 0xBE, 0x00, 0xE4, 0x00, 0x24, 0x01, 0x48, 0x03, 0x98, 0x02, 
+  0x88, 0x02, 0x84, 0x02, 0x42, 0x01, 0x27, 0x01, 0xB5, 0x01, 0xF9, 0x01, 
+  0x52, 0x07, 0x5C, 0x04, };
+
+// ===== front kick second frame (14 * 26) =====
+const unsigned char front_kick_second_frame_bits[] PROGMEM = {
+  0xF0, 0x03, 0xF8, 0x07, 0x5C, 0x0E, 0x9C, 0x02, 0x1C, 0x06, 0x3C, 0x02, 
+  0x44, 0x0E, 0x84, 0x0A, 0xF4, 0x0B, 0x44, 0x1E, 0x4C, 0x33, 0xF8, 0x25, 
+  0x78, 0x36, 0x48, 0x12, 0x48, 0x09, 0xF8, 0x09, 0xC8, 0x07, 0xC8, 0x02, 
+  0xC8, 0x05, 0x4E, 0x06, 0x42, 0x00, 0x22, 0x00, 0x26, 0x00, 0x19, 0x00, 
+  0x21, 0x00, 0x3F, 0x00, };
+
+// ========= front kick third frame (16* 26)
+const unsigned char front_kick_third_frame_bits[] PROGMEM = {
+  0xFC, 0x00, 0x4E, 0x00, 0xD6, 0x00, 0x46, 0x00, 0x7E, 0x00, 0x22, 0x00, 
+  0xE1, 0x07, 0x05, 0x05, 0x99, 0x07, 0xF1, 0xE0, 0x5E, 0xA0, 0xCC, 0xBF, 
+  0x7A, 0x90, 0x32, 0xF0, 0x22, 0x7E, 0xFC, 0x03, 0xC4, 0x00, 0x46, 0x00, 
+  0x62, 0x00, 0x22, 0x00, 0x32, 0x00, 0x12, 0x00, 0x1E, 0x00, 0x72, 0x00, 
+  0x42, 0x00, 0x7E, 0x00, };
+
 
 // ===== GAME OBJECTS =====
 struct Player{
@@ -89,6 +115,7 @@ void setup() {
   pinMode(BTN_PLAYER_1_RIGHT, INPUT_PULLUP);
   pinMode(BTN_PLAYER_1_LEFT, INPUT_PULLUP);
 
+  initialize_game();
 }
 
 void loop() {
@@ -97,6 +124,16 @@ void loop() {
     draw_game();
 
   }  
+}
+
+// ==== INITIALIZATION =====
+void initialize_game(){
+
+  //spoting player 1 
+
+  player_1.x = 42;
+  player_1.y = SCREEN_HEIGHT - 26 ; 
+  player_1.health = 100;
 }
 
 // ==== DRAWING SPRITES =====
@@ -110,20 +147,36 @@ void draw_lunet_punch(uint8_t frame){
 void draw_walking(uint8_t frame){
   switch (frame) {
     case 0:
-      u8g2.drawXBMP(32, SCREEN_HEIGHT -26, 16, 26, player_walking_right_foot_up_pose_bits);
+      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT -26, 16, 26, player_walking_right_foot_up_pose_bits);
     break;
     case 1:
-      u8g2.drawXBMP(32, SCREEN_HEIGHT - 26 , 14 , 26, player_walking_passing_pose_bits);
+      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT - 26 , 14 , 26, player_walking_passing_pose_bits);
     break;
     case 2:
-      u8g2.drawXBMP(32, SCREEN_HEIGHT -26, 17, 26, player_walking_right_foot_contact_pose_bits);
-    break;
-    case 3:
-
+      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT -26, 17, 26, player_walking_right_foot_contact_pose_bits);
     break;
   }
 }
 
+void draw_front_kick(uint8_t frame){
+  switch (frame) {
+    case 0:
+      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT - 26 , 13, 26, front_kick_first_frame_bits);
+    break;
+    case 1:
+      u8g2.drawXBMP(player_1.x , SCREEN_HEIGHT - 26 , 14, 26, front_kick_second_frame_bits);
+    break;
+    case 2:
+      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT - 26 , 16, 26, front_kick_third_frame_bits);
+    break;
+    case 3:
+      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT - 26 , 14, 26, front_kick_second_frame_bits);
+    break;
+    case 4:
+      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT - 26 , 13, 26, front_kick_first_frame_bits);
+    break;
+  }
+}
 // ==== RENDERIG GAME ANIMATIONS ===
 void play_lunet_punch(bool is_player_1){
   switch (is_player_1) {
@@ -142,7 +195,19 @@ void play_front_punch(bool is_player_1){
   }
 }
 
-void play_walking_animation(){
+void play_front_kick_animation(int spawn_x){
+
+  unsigned long player_1_front_kick_animation_now = millis();
+
+  if(player_1_front_kick_animation_now - player_1_last_frame_time > 80 ){
+    player_1_current_frame = (player_1_current_frame +1 ) % 5;
+    player_1_last_frame_time = player_1_front_kick_animation_now;
+  } 
+
+  draw_front_kick(player_1_current_frame);
+}
+
+void play_walking_animation(int spawn_x){
   unsigned long player_1_walking_animation_now = millis();
   if (player_1_walking_animation_now - player_1_last_frame_time >100 ) {
     player_1_current_frame = (player_1_current_frame + 1) % 3;
@@ -151,21 +216,26 @@ void play_walking_animation(){
 
   draw_walking(player_1_current_frame);
 }
+
 // ==== RENDERING GAME SCENE =====
 void draw_game(){
+  
   /* 
   if (game_first_draw) {
     u8g2.clearBuffer();
 
-
+    draw_walking(0, player_1.x);
     u8g2.sendBuffer();
     game_first_draw= false;
   }
   */
+  
+
+  //Player 1 controls
 
   u8g2.clearBuffer();
 
-  play_walking_animation();
+  play_front_kick_animation(30);
 
 
 
