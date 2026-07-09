@@ -1,7 +1,7 @@
 #include <U8g2lib.h>
 
 // ===== HARDWARE CONFIGURATION =====
-U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, -1, A5, A4);
+U8G2_SH1106_128X64_NONAME_2_HW_I2C u8g2(U8G2_R0, -1, A5, A4);
 
 #define BTN_PLAYER_1_ACTION 12
 #define BTN_PLAYER_1_DOWN 9
@@ -25,10 +25,6 @@ U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, -1, A5, A4);
 int player_1_score = 0;
 int player_2_score = 0;
 bool game_over = false;
-
-//game scene states
-bool game_first_draw = true;
-bool gameover_first_draw = true;
 
 // Idk 
 #define walking_speed 2 //2px/ frame
@@ -219,25 +215,10 @@ void play_walking_animation(int spawn_x){
 
 // ==== RENDERING GAME SCENE =====
 void draw_game(){
-  
-  /* 
-  if (game_first_draw) {
-    u8g2.clearBuffer();
-
-    draw_walking(0, player_1.x);
-    u8g2.sendBuffer();
-    game_first_draw= false;
-  }
-  */
-  
-
-  //Player 1 controls
-
-  u8g2.clearBuffer();
-
-  play_front_kick_animation(30);
+  u8g2.firstPage();
+  do {
+    //play_front_kick_animation(30);
+  }while (u8g2.nextPage());
 
 
-
-  u8g2.sendBuffer();
 }
