@@ -163,7 +163,7 @@ void draw_player_1_punching(uint8_t frame){
       u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-24, 13, 24, player_walking_passing_pose_bits);
     break;
     case 3:
-      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-22, 16, 22, idk4_bits);
+      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-22, 16, 22, idk5_bits);
     break;
     case 4: 
       u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-19, 16, 19, front_punch_frame_4_bits);
