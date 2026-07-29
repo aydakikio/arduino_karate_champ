@@ -157,6 +157,7 @@ void draw_player_1_walking(uint8_t frame){
 
 void draw_player_1_punching(uint8_t frame){
   switch (frame) {
+    
     case 0:
       u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-21, 17, 21 , trot_bits);
     break;
@@ -178,9 +179,7 @@ void draw_player_1_punching(uint8_t frame){
 void draw_player_1_front_kick(uint8_t frame){
   switch (frame) {
     case 0:
-      u8g2.setFont(u8g2_font_4x6_tf);
-      u8g2.drawStr(0, 0, 1);
-      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-23, 16, 23, player_walking_right_foot_contact_pose_bits);
+      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-24, 13, 24, player_walking_passing_pose_bits);
     break;
     case 1:
       u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-23, 10, 23, front_kick_second_frame_bits);
@@ -193,14 +192,13 @@ void draw_player_1_front_kick(uint8_t frame){
     break;
     case 4:
       u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-24, 13, 24, player_walking_passing_pose_bits);
-      is_front_kick_playing=false;
-    break;
+     break;
   }
 }
 
 
 void play_player_1_front_kick() {
-  if (millis() - last_time >= 200 && is_front_kick_playing==false) {
+  if (millis() - last_time >= 180) {
     frame = (frame + 1) % 4;
     last_time = millis();
   }
@@ -208,12 +206,32 @@ void play_player_1_front_kick() {
   draw_player_1_front_kick(frame);
 }
 
+void play_player_1_walking() {
+  if (millis() - last_time >= 180) {
+    frame = (frame + 1) % 3;
+    last_time = millis();
+  }
+
+  draw_player_1_walking(frame);
+}
+
+void play_player_1_punching() {
+  if (millis() - last_time >= 180) {
+    frame = (frame + 1) % 5;
+    last_time = millis();
+  }
+
+  draw_player_1_punching(frame);
+}
+
 void draw_game(){
   u8g2.firstPage();
 
   do {
-
-    play_player_1_front_kick();
+    u8g2.setFont(u8g2_font_3x5im_mr);
+    
+    play_player_1_walking();
+    
   }while (u8g2.nextPage());
 
 }
