@@ -131,11 +131,68 @@ const unsigned char back_kick_frame_3_bits[] PROGMEM= {
 
 //17X16
 const unsigned char back_kick_frame_4_bits[] PROGMEM= {
-0x00, 0xE0, 0x00, 0x00, 0xC0, 0x01, 0x00, 0x70, 0x01, 0x00, 0xCC, 0x01, 
+  0x00, 0xE0, 0x00, 0x00, 0xC0, 0x01, 0x00, 0x70, 0x01, 0x00, 0xCC, 0x01, 
   0xFC, 0xCB, 0x00, 0x06, 0xEE, 0x00, 0x3F, 0xA8, 0x00, 0xC3, 0xBB, 0x01, 
   0x03, 0xD4, 0x01, 0x00, 0x34, 0x00, 0x00, 0x24, 0x00, 0x00, 0x24, 0x00, 
   0x00, 0x14, 0x00, 0x00, 0x14, 0x00, 0x00, 0x1C, 0x00, 0x00, 0x3C, 0x00, 
   };
+
+//Block animation
+//frame 1 =walk_right_leg_contact_bits
+//12X23
+const unsigned char block_frame_two_bits[] PROGMEM= {
+  0xC0, 0x01, 0xE0, 0x01, 0x60, 0x03, 0xE0, 0x01, 0xF0, 0x0C, 0x08, 0x0F, 
+  0x08, 0x07, 0xF0, 0x05, 0xF0, 0x05, 0x30, 0x07, 0xE0, 0x03, 0x30, 0x01, 
+  0xD0, 0x03, 0xC8, 0x04, 0x48, 0x05, 0x28, 0x0D, 0x24, 0x09, 0x14, 0x09, 
+  0x12, 0x09, 0x09, 0x09, 0x09, 0x09, 0x07, 0x07, 0x0F, 0x0F, };
+
+//14X23
+const unsigned char block_frame_three_bits[] PROGMEM= {
+0xC0, 0x03, 0xE0, 0x01, 0x60, 0x03, 0xE0, 0x01, 0xF0, 0x1F, 0x08, 0x38, 
+  0xC8, 0x07, 0xA8, 0x04, 0xF0, 0x06, 0xB0, 0x03, 0x20, 0x02, 0xF0, 0x03, 
+  0x28, 0x06, 0xD8, 0x07, 0x90, 0x08, 0x90, 0x11, 0x48, 0x13, 0x44, 0x12, 
+  0x24, 0x12, 0x22, 0x12, 0x11, 0x12, 0x09, 0x1E, 0x1E, 0x3C, };
+
+//15X21
+const unsigned char block_frame_four_bits[] PROGMEM= {
+0x80, 0x07, 0xC0, 0x03, 0xC0, 0x06, 0xC0, 0x63, 0xA0, 0x67, 0x50, 0x6B, 
+  0x48, 0x3A, 0x88, 0x65, 0xF0, 0x4D, 0x40, 0x32, 0xE0, 0x07, 0xA0, 0x04, 
+  0xF0, 0x0F, 0x90, 0x11, 0x88, 0x12, 0x44, 0x12, 0x22, 0x12, 0x12, 0x12, 
+  0x09, 0x12, 0x05, 0x09, 0x0F, 0x1F, };
+
+//Sweep animation
+//13X22
+const unsigned char sweep_animation_frame_one_bits[] PROGMEM= {
+0x78, 0x00, 0xF0, 0x00, 0xD8, 0x00, 0x70, 0x00, 0xFE, 0x00, 0x33, 0x01, 
+  0x21, 0x01, 0x85, 0x1A, 0x85, 0x1F, 0x49, 0x0F, 0xBE, 0x01, 0xB5, 0x00, 
+  0x8B, 0x00, 0xFB, 0x00, 0x81, 0x00, 0x92, 0x00, 0x92, 0x00, 0x92, 0x00, 
+  0x53, 0x00, 0x79, 0x00, 0x3F, 0x00, 0x6E, 0x00, };
+
+//15X18
+const unsigned char sweep_animation_frame_two_bits[] PROGMEM= {
+0x00, 0x3E, 0x00, 0x74, 0x00, 0x7E, 0x00, 0x7C, 0xF0, 0x7F, 0x18, 0x38, 
+  0x08, 0x38, 0x04, 0x28, 0x82, 0x20, 0xC2, 0x21, 0x79, 0x29, 0x09, 0x29, 
+  0x87, 0x2E, 0xCC, 0x2A, 0x8F, 0x2A, 0x8F, 0x2A, 0xFF, 0x3B, 0x8E, 0x77, };
+
+//17X12
+const unsigned char sweep_animation_frame_three_bits[] PROGMEM= {
+0x00, 0x78, 0x00, 0x00, 0xF0, 0x00, 0x00, 0xDE, 0x00, 0x00, 0xF1, 0x00, 
+  0xC0, 0x85, 0x01, 0x40, 0xA5, 0x01, 0xA0, 0xA6, 0x01, 0x9C, 0xB7, 0x00, 
+  0x43, 0xED, 0x00, 0xB9, 0x4D, 0x00, 0x07, 0xDB, 0x00, 0x0E, 0x00, 0x00, };
+
+//13X21
+const unsigned char sweep_animation_frame_four_bits[] PROGMEM= {
+0xC0, 0x07, 0x80, 0x0F, 0xF8, 0x0A, 0x84, 0x0F, 0x92, 0x07, 0x12, 0x0B, 
+  0x12, 0x09, 0x1A, 0x08, 0x8C, 0x09, 0xDE, 0x0F, 0x79, 0x0E, 0x1B, 0x1A, 
+  0x02, 0x1A, 0x1C, 0x1A, 0x70, 0x02, 0x4C, 0x02, 0x22, 0x01, 0x27, 0x01, 
+  0x1F, 0x01, 0xF3, 0x01, 0xE6, 0x03, };
+
+//15X21
+const unsigned char sweep_animation_frame_five_bits[] PROGMEM= {
+0xC0, 0x03, 0x80, 0x07, 0xC0, 0x06, 0x80, 0x07, 0xF8, 0x07, 0xC8, 0x03, 
+  0x8C, 0x04, 0x04, 0x64, 0x14, 0x74, 0x9C, 0x38, 0x7C, 0x09, 0x6C, 0x0E, 
+  0x04, 0x01, 0x88, 0x02, 0x30, 0x01, 0x58, 0x01, 0x24, 0x01, 0x32, 0x01, 
+  0xAB, 0x00, 0xA7, 0x00, 0xEE, 0x01, };
 
 //PLAYER 1 ANIMATION
 static uint8_t frame = 0;
@@ -153,6 +210,9 @@ struct Player{
 };
 
 Player player_1;
+Player player_2;
+
+static uint8_t flipBuf[66];
 
 //Forward declration
 void draw_walking(uint8_t frame);
@@ -163,6 +223,7 @@ void setup() {
   u8g2.begin();
 
   player_1.x = 30;
+  player_2.x =100;
 }
 
 void loop() {
@@ -171,6 +232,40 @@ void loop() {
 
 void handle_inputs(){
   
+}
+
+static inline uint8_t reverseBits(uint8_t b) {
+    b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
+    b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
+    b = (b & 0xAA) >> 1 | (b & 0x55) << 1;
+    return b;
+}
+
+void flipXBMH(const uint8_t* src, uint8_t* buf, uint8_t w, uint8_t h) {
+    const uint8_t bpr   = (w + 7) >> 3;
+    const uint8_t rem   = w & 7;
+    const uint8_t shift = rem ? (8 - rem) : 0;
+
+    for (uint8_t row = 0; row < h; row++) {
+        uint8_t* dst = buf + (uint16_t)row * bpr;
+
+        // Step 1+2: reverse byte order, reverse bits within each byte
+        for (uint8_t i = 0; i < bpr; i++) {
+            dst[i] = reverseBits(
+                pgm_read_byte(src + (uint16_t)row * bpr + (bpr - 1 - i))
+            );
+        }
+
+        // Step 3: right-shift the row to remove padding (LSB-left / XBM format)
+        if (shift) {
+            uint8_t carry = 0;
+            for (int8_t i = (int8_t)bpr - 1; i >= 0; i--) {
+                uint8_t spill = dst[i] << (8 - shift);
+                dst[i] = (dst[i] >> shift) | carry;
+                carry = spill;
+            }
+        }
+    }
 }
 
 void draw_player_1_walking(uint8_t frame){
@@ -254,40 +349,355 @@ void draw_player_1_back_kick(uint8_t frame){
   }
 }
 
-void play_player_1_front_kick() {
-  if (millis() - last_time >= 180) {
-    frame = (frame + 1) % 4;
-    last_time = millis();
+void draw_player_1_block(uint8_t frame){
+  switch(frame){
+    case 0:
+        u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-22, 16, 22, walk_right_leg_contact_bits);
+      break;
+    case 1:
+        u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-23,12,23,block_frame_two_bits);
+      break;
+    case 2:
+        u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-23,14,23,block_frame_three_bits);
+      break;
+    case 3:
+        u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-21,15,21,block_frame_four_bits);
+      break;
   }
-
-  draw_player_1_front_kick(frame);
 }
 
-void play_player_1_walking() {
-  if (millis() - last_time >= 180) {
-    frame = (frame + 1) % 3;
-    last_time = millis();
+void draw_player_1_sweep(uint8_t frame){
+  switch (frame) {
+    case 0:
+      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-22, 13, 22, sweep_animation_frame_one_bits);
+    break;
+    case 1:
+      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-18, 15, 18, sweep_animation_frame_two_bits);
+    break;
+    case 2:
+      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-12, 17, 12, sweep_animation_frame_three_bits);
+    break;
+    case 3:
+      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-21, 13, 21, sweep_animation_frame_four_bits);
+    break;
+    case 4:
+      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-21, 15, 21, sweep_animation_frame_five_bits);
+    break;
+    case 5:
+      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-22, 13, 22, sweep_animation_frame_one_bits);
+    break;
   }
-
-  draw_player_1_walking(frame);
 }
 
-void play_player_1_punching() {
+void draw_player_2_walking(uint8_t frame) {
+  switch (frame) {
+    case 0:
+      flipXBMH(player_walking_right_foot_up_pose_bits, flipBuf, 12, 24);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 23, 12, 24, flipBuf);
+      break;
+
+    case 1:
+      flipXBMH(player_walking_passing_pose_bits, flipBuf, 13, 24);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 24, 13, 24, flipBuf);
+      break;
+
+    case 2:
+      flipXBMH(player_walking_right_foot_contact_pose_bits, flipBuf, 16, 23);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 23, 16, 23, flipBuf);
+      break;
+  }
+}
+
+void draw_player_2_punching(uint8_t frame) {
+  switch (frame) {
+    case 0:
+      flipXBMH(trot_bits, flipBuf, 17, 21);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 21, 17, 21, flipBuf);
+      break;
+
+    case 1:
+      flipXBMH(walk_step_r_bits, flipBuf, 12, 24);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 24, 12, 24, flipBuf);
+      break;
+
+    case 2:
+      flipXBMH(player_walking_passing_pose_bits, flipBuf, 13, 24);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 24, 13, 24, flipBuf);
+      break;
+
+    case 3:
+      flipXBMH(walk_right_leg_contact_bits, flipBuf, 16, 22);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 22, 16, 22, flipBuf);
+      break;
+
+    case 4:
+      flipXBMH(player_walking_passing_pose_bits, flipBuf, 13, 24);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 24, 13, 24, flipBuf);
+      break;
+  }
+}
+
+void draw_player_2_front_kick(uint8_t frame) {
+  switch (frame) {
+    case 0:
+      flipXBMH(player_walking_passing_pose_bits, flipBuf, 13, 24);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 24, 13, 24, flipBuf);
+      break;
+
+    case 1:
+      flipXBMH(front_kick_second_frame_bits, flipBuf, 10, 23);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 23, 10, 23, flipBuf);
+      break;
+
+    case 2:
+      flipXBMH(front_kick_third_frame_bits, flipBuf, 10, 22);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 22, 10, 22, flipBuf);
+      break;
+
+    case 3:
+      flipXBMH(front_kick_fourth_frame_bits, flipBuf, 15, 19);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 19, 15, 19, flipBuf);
+      break;
+
+    case 4:
+      flipXBMH(player_walking_passing_pose_bits, flipBuf, 13, 24);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 24, 13, 24, flipBuf);
+      break;
+  }
+}
+
+void draw_player_2_back_kick(uint8_t frame) {
+  switch (frame) {
+    case 0:
+      flipXBMH(back_kick_frame_1_bits, flipBuf, 15, 23);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 23, 15, 23, flipBuf);
+      break;
+
+    case 1:
+      flipXBMH(back_kick_frame_2_bits, flipBuf, 14, 24);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 24, 14, 24, flipBuf);
+      break;
+
+    case 2:
+      flipXBMH(back_kick_frame_3_bits, flipBuf, 12, 22);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 22, 12, 22, flipBuf);
+      break;
+
+    case 3:
+      flipXBMH(back_kick_frame_4_bits, flipBuf, 17, 16);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 16, 17, 16, flipBuf);
+      break;
+
+    case 4:
+      flipXBMH(back_kick_frame_3_bits, flipBuf, 12, 22);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 22, 12, 22, flipBuf);
+      break;
+
+    case 5:
+      flipXBMH(back_kick_frame_2_bits, flipBuf, 14, 24);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 24, 14, 24, flipBuf);
+      break;
+
+    case 6:
+      flipXBMH(back_kick_frame_1_bits, flipBuf, 15, 23);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 23, 15, 23, flipBuf);
+      break;
+  }
+}
+
+void draw_player_2_block(uint8_t frame) {
+  switch (frame) {
+    case 0:
+      flipXBMH(walk_right_leg_contact_bits, flipBuf, 16, 22);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 22, 16, 22, flipBuf);
+      break;
+
+    case 1:
+      flipXBMH(block_frame_two_bits, flipBuf, 12, 23);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 23, 12, 23, flipBuf);
+      break;
+
+    case 2:
+      flipXBMH(block_frame_three_bits, flipBuf, 14, 23);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 23, 14, 23, flipBuf);
+      break;
+
+    case 3:
+      flipXBMH(block_frame_four_bits, flipBuf, 15, 21);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 21, 15, 21, flipBuf);
+      break;
+  }
+}
+
+void draw_player_2_sweep(uint8_t frame) {
+  switch (frame) {
+    case 0:
+      flipXBMH(sweep_animation_frame_one_bits, flipBuf, 13, 22);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 22, 13, 22, flipBuf);
+      break;
+
+    case 1:
+      flipXBMH(sweep_animation_frame_two_bits, flipBuf, 15, 18);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 18, 15, 18, flipBuf);
+      break;
+
+    case 2:
+      flipXBMH(sweep_animation_frame_three_bits, flipBuf, 17, 12);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 12, 17, 12, flipBuf);
+      break;
+
+    case 3:
+      flipXBMH(sweep_animation_frame_four_bits, flipBuf, 13, 21);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 21, 13, 21, flipBuf);
+      break;
+
+    case 4:
+      flipXBMH(sweep_animation_frame_five_bits, flipBuf, 15, 21);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 21, 15, 21, flipBuf);
+      break;
+
+    case 5:
+      flipXBMH(sweep_animation_frame_one_bits, flipBuf, 13, 22);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 22, 13, 22, flipBuf);
+      break;
+  }
+}
+
+void play_front_kick(bool is_player_1) {
+
   if (millis() - last_time >= 180) {
+
     frame = (frame + 1) % 5;
+
     last_time = millis();
+
   }
 
-  draw_player_1_punching(frame);
+  if (is_player_1) {
+
+    draw_player_1_front_kick(frame);
+
+  } else {
+
+    draw_player_2_front_kick(frame);
+
+  }
+
 }
 
-void play_player_1_back_kick() {
+
+void play_walking(bool is_player_1) {
+
   if (millis() - last_time >= 180) {
-    frame = (frame + 1) % 7;
+
+    frame = (frame + 1) % 3;
+
     last_time = millis();
+
   }
 
-  draw_player_1_back_kick(frame);
+  if (is_player_1) {
+
+    draw_player_1_walking(frame);
+
+  } else {
+
+    draw_player_2_walking(frame);
+
+  }
+
+}
+
+
+void play_punching(bool is_player_1) {
+
+  if (millis() - last_time >= 180) {
+
+    frame = (frame + 1) % 5;
+
+    last_time = millis();
+
+  }
+
+  if (is_player_1) {
+
+    draw_player_1_punching(frame);
+
+  } else {
+
+    draw_player_2_punching(frame);
+
+  }
+
+}
+
+
+void play_back_kick(bool is_player_1) {
+
+  if (millis() - last_time >= 180) {
+
+    frame = (frame + 1) % 7;
+
+    last_time = millis();
+
+  }
+
+  if (is_player_1) {
+
+    draw_player_1_back_kick(frame);
+
+  } else {
+
+    draw_player_2_back_kick(frame);
+
+  }
+
+}
+
+
+void play_block(bool is_player_1) {
+
+  if (millis() - last_time >= 180) {
+
+    frame = (frame + 1) % 4;
+
+    last_time = millis();
+
+  }
+
+  if (is_player_1) {
+
+    draw_player_1_block(frame);
+
+  } else {
+
+    draw_player_2_block(frame);
+
+  }
+
+}
+
+
+void play_sweep(bool is_player_1) {
+
+  if (millis() - last_time >= 180) {
+
+    frame = (frame + 1) % 6;
+
+    last_time = millis();
+
+  }
+
+  if (is_player_1) {
+
+    draw_player_1_sweep(frame);
+
+  } else {
+
+    draw_player_2_sweep(frame);
+
+  }
+
 }
 
 void draw_game(){
@@ -295,8 +705,8 @@ void draw_game(){
 
   do {
     u8g2.setFont(u8g2_font_3x5im_mr);
-    
-    play_player_1_back_kick();
+    //play_block(false);
+    play_front_kick(false);
   }while (u8g2.nextPage());
 
 }
