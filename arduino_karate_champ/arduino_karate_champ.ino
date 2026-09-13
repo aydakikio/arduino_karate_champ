@@ -3,17 +3,21 @@
 // ===== HARDWARE CONFIGURATION =====
 U8G2_SH1106_128X64_NONAME_2_HW_I2C u8g2(U8G2_R0, -1, A5, A4);
 
+//player 1 buttons
 #define BTN_PLAYER_1_ACTION 12
 #define BTN_PLAYER_1_DOWN 9
 #define BTN_PLAYER_1_UP 6
 #define BTN_PLAYER_1_RIGHT 10
 #define BTN_PLAYER_1_LEFT 7
 
+
 // ===== DISPLAY CONSTANTS =====
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
-#define GAME_AREA_TOP 8
 
+//others
+#define ROUND_MAX_TIME 90
+#define ANIMATION_SPEED 180 //every 180 scond changes 
 #define DEBOUNCE_MS 50
 
 // ===== SPRITE'S BITMAP ======
@@ -201,6 +205,8 @@ int player_1_score = 0;
 int player_2_score = 0;
 uint8_t current_round = 0;
 bool game_over = false;
+bool is_round_finished = false;
+uint32_t round_timer = 90;
 
 struct Player{
   int health;
@@ -226,6 +232,7 @@ void handle_inputs();
 void setup() {
   u8g2.begin();
 
+  //player 1 buttons
   pinMode(BTN_PLAYER_1_ACTION, INPUT_PULLUP);
   pinMode(BTN_PLAYER_1_DOWN,   INPUT_PULLUP);
   pinMode(BTN_PLAYER_1_UP,     INPUT_PULLUP);
@@ -236,8 +243,9 @@ void setup() {
 }
 
 void setup_game() {
+  
   //init player 1
-  player_1.x = 30;
+  player_1.x = 10;
   player_1.health = 100;
   player_1.state = 0;
   player_1.frame = 0;
@@ -247,7 +255,7 @@ void setup_game() {
   player_1_score = 0;
 
   //init player 2
-  player_2.x = 100;
+  player_2.x = 110;
   player_2.health = 100;
   player_2.state = 0;
   player_2.frame = 0;
@@ -642,7 +650,7 @@ void play_front_kick(bool is_player_1) {
     player.locked = true;          
   }
 
-  if (millis() - player.anim_last_time >= 180) {
+  if (millis() - player.anim_last_time >= ANIMATION_SPEED) {
     player.frame++;
     player.anim_last_time = millis();
 
@@ -668,7 +676,7 @@ void play_walking(bool is_player_1) {
     player.prev_state = player.state;
   }
 
-  if (millis() - player.anim_last_time >= 180) {
+  if (millis() - player.anim_last_time >= ANIMATION_SPEED) {
     player.frame = (player.frame + 1) % 3;
     player.anim_last_time = millis();
   }
@@ -699,7 +707,7 @@ void play_walking_backward(bool is_player_1) {
     player.prev_state = player.state;
   }
 
-  if (millis() - player.anim_last_time >= 180) {
+  if (millis() - player.anim_last_time >= ANIMATION_SPEED) {
     player.frame = (player.frame + 2) % 3;
     player.anim_last_time = millis();
   }
@@ -723,7 +731,7 @@ void play_punching(bool is_player_1) {
     player.locked = true;
   }
 
-  if (millis() - player.anim_last_time >= 180) {
+  if (millis() - player.anim_last_time >= ANIMATION_SPEED) {
     player.frame++;
     player.anim_last_time = millis();
 
@@ -750,7 +758,7 @@ void play_back_kick(bool is_player_1) {
     player.locked = true;
   }
 
-  if (millis() - player.anim_last_time >= 180) {
+  if (millis() - player.anim_last_time >= ANIMATION_SPEED) {
     player.frame++;
     player.anim_last_time = millis();
 
@@ -776,7 +784,7 @@ void play_block(bool is_player_1, bool is_right, int x) {
     player.prev_state = player.state;
   }
 
-  if (millis() - player.anim_last_time >= 180) {
+  if (millis() - player.anim_last_time >= ANIMATION_SPEED) {
     player.frame = (player.frame + 1) % 4;
     player.anim_last_time = millis();
   }
@@ -795,7 +803,7 @@ void play_sweep(bool is_player_1, bool is_left, int x) {
     player.locked = true;
   }
 
-  if (millis() - player.anim_last_time >= 180) {
+  if (millis() - player.anim_last_time >= ANIMATION_SPEED) {
     player.frame++;
     player.anim_last_time = millis();
 
@@ -855,7 +863,7 @@ void draw_player_2(){
   switch (player_2.state) {
     case 0:
       flipXBMH(player_walking_passing_pose_bits, flipBuf, 13, 24);
-      u8g2.drawXBMP(player_2.x, SCREEN_HEIGHT-24, 13, 24, flipBuf);    
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 24, 13, 24, flipBuf);
     break;
     case 1:
       play_walking(false);
@@ -894,21 +902,31 @@ void draw_player_2(){
 
 void draw_healthbars(){
   //draw player 1 health bar
-  u8g2.drawBox(0,0,(player_1.health/2),10);
+  u8g2.drawBox(0,0,(player_1.health/2),8);
 
   //draw time board
+  u8g2.setFont(u8g2_font_courR08_tf);
+  u8g2.setCursor(58,8);
+  u8g2.print(round_timer);
 
   //draw player 2 health bar
-  u8g2.drawBox(78,0,(player_2.health/2),10);
+  u8g2.drawBox(78,0,(player_2.health/2),8);
 }
 
 void draw_game(){
   u8g2.firstPage();
 
   do {
+    draw_player_2();
     draw_player_1();
-    //draw_player_2();
     draw_healthbars();
   }while (u8g2.nextPage());
+}
 
+void draw_round_end_page(){
+
+}
+
+void draw_game_over_page(){
+  
 }
