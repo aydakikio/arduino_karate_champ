@@ -14,6 +14,8 @@ U8G2_SH1106_128X64_NONAME_2_HW_I2C u8g2(U8G2_R0, -1, A5, A4);
 #define SCREEN_HEIGHT 64
 #define GAME_AREA_TOP 8
 
+#define DEBOUNCE_MS 50
+
 // ===== SPRITE'S BITMAP ======
 // ==== Player walking passing pose  (13 X 24) ======
 const unsigned char player_walking_passing_pose_bits[] PROGMEM = { //Base sprite when idle 
@@ -194,19 +196,21 @@ const unsigned char sweep_animation_frame_five_bits[] PROGMEM= {
   0x04, 0x01, 0x88, 0x02, 0x30, 0x01, 0x58, 0x01, 0x24, 0x01, 0x32, 0x01, 
   0xAB, 0x00, 0xA7, 0x00, 0xEE, 0x01, };
 
-//PLAYER 1 ANIMATION
-static uint8_t frame = 0;
-static uint32_t last_time = 0;
-static bool is_front_kick_playing = true;
-
 // ===== GAME STATE =====
 int player_1_score = 0;
+int player_2_score = 0;
+uint8_t current_round = 0;
 bool game_over = false;
 
 struct Player{
   int health;
   int x;
-  int y;
+  uint8_t state;
+  uint8_t frame;        
+  uint32_t anim_last_time;
+  uint8_t prev_state;
+  bool locked;          
+  uint32_t last_pressed_time;
 };
 
 Player player_1;
@@ -215,23 +219,87 @@ Player player_2;
 static uint8_t flipBuf[66];
 
 //Forward declration
-void draw_walking(uint8_t frame);
 void draw_game();
+void setup_game();
+void handle_inputs();
 
 void setup() {
-  // put your setup code here, to run once:
   u8g2.begin();
 
+  pinMode(BTN_PLAYER_1_ACTION, INPUT_PULLUP);
+  pinMode(BTN_PLAYER_1_DOWN,   INPUT_PULLUP);
+  pinMode(BTN_PLAYER_1_UP,     INPUT_PULLUP);
+  pinMode(BTN_PLAYER_1_RIGHT,  INPUT_PULLUP);
+  pinMode(BTN_PLAYER_1_LEFT,   INPUT_PULLUP);
+
+  setup_game();
+}
+
+void setup_game() {
+  //init player 1
   player_1.x = 30;
-  player_2.x =100;
+  player_1.health = 100;
+  player_1.state = 0;
+  player_1.frame = 0;
+  player_1.anim_last_time = 0;
+  player_1.prev_state = 255;
+  player_1.locked = false;
+  player_1_score = 0;
+
+  //init player 2
+  player_2.x = 100;
+  player_2.health = 100;
+  player_2.state = 0;
+  player_2.frame = 0;
+  player_2.anim_last_time = 0;
+  player_2.prev_state = 255;
+  player_2.locked = false;
+  player_2_score = 0;
 }
 
 void loop() {
+  handle_inputs();
   draw_game();
 }
 
+void handle_player_1_inputs() {
+  uint32_t now = millis();
+  if (player_1.locked) return;
+
+  bool action = digitalRead(BTN_PLAYER_1_ACTION) == LOW;
+  bool right  = digitalRead(BTN_PLAYER_1_RIGHT)  == LOW;
+  bool left   = digitalRead(BTN_PLAYER_1_LEFT)   == LOW;
+  bool up     = digitalRead(BTN_PLAYER_1_UP)     == LOW;
+  bool down   = digitalRead(BTN_PLAYER_1_DOWN)   == LOW;
+
+  uint8_t ns;
+  if      (right && down && action) ns = 9;
+  else if (left  && down && action) ns = 8;
+  else if (right && up   && action) ns = 6;
+  else if (left  && up   && action) ns = 7;
+  else if (right && action)         ns = 4;
+  else if (left  && action)         ns = 5;
+  else if (action)                  ns = 3;
+  else if (right)                   ns = 2;
+  else if (left)                    ns = 1;
+  else                              ns = 0;
+
+  // only debounce on state *changes*, not every frame
+  if (ns != player_1.state) {
+    if (now - player_1.last_pressed_time < DEBOUNCE_MS) return;
+    player_1.last_pressed_time = now;
+  }
+
+  player_1.state = ns;
+}
+
+void handle_player_2_inputs(){
+
+}
+
 void handle_inputs(){
-  
+  handle_player_1_inputs();
+  handle_player_2_inputs();
 }
 
 static inline uint8_t reverseBits(uint8_t b) {
@@ -349,42 +417,43 @@ void draw_player_1_back_kick(uint8_t frame){
   }
 }
 
-void draw_player_1_block(uint8_t frame){
+void draw_right_block(uint8_t frame,int x){
+  
   switch(frame){
     case 0:
-        u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-22, 16, 22, walk_right_leg_contact_bits);
+        u8g2.drawXBMP(x, SCREEN_HEIGHT-22, 16, 22, walk_right_leg_contact_bits);
       break;
     case 1:
-        u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-23,12,23,block_frame_two_bits);
+        u8g2.drawXBMP(x, SCREEN_HEIGHT-23,12,23,block_frame_two_bits);
       break;
     case 2:
-        u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-23,14,23,block_frame_three_bits);
+        u8g2.drawXBMP(x, SCREEN_HEIGHT-23,14,23,block_frame_three_bits);
       break;
     case 3:
-        u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-21,15,21,block_frame_four_bits);
+        u8g2.drawXBMP(x, SCREEN_HEIGHT-21,15,21,block_frame_four_bits);
       break;
   }
 }
 
-void draw_player_1_sweep(uint8_t frame){
+void draw_left_sweep(uint8_t frame,int x){
   switch (frame) {
     case 0:
-      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-22, 13, 22, sweep_animation_frame_one_bits);
+      u8g2.drawXBMP(x, SCREEN_HEIGHT-22, 13, 22, sweep_animation_frame_one_bits);
     break;
     case 1:
-      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-18, 15, 18, sweep_animation_frame_two_bits);
+      u8g2.drawXBMP(x, SCREEN_HEIGHT-18, 15, 18, sweep_animation_frame_two_bits);
     break;
     case 2:
-      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-12, 17, 12, sweep_animation_frame_three_bits);
+      u8g2.drawXBMP(x, SCREEN_HEIGHT-12, 17, 12, sweep_animation_frame_three_bits);
     break;
     case 3:
-      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-21, 13, 21, sweep_animation_frame_four_bits);
+      u8g2.drawXBMP(x, SCREEN_HEIGHT-21, 13, 21, sweep_animation_frame_four_bits);
     break;
     case 4:
-      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-21, 15, 21, sweep_animation_frame_five_bits);
+      u8g2.drawXBMP(x, SCREEN_HEIGHT-21, 15, 21, sweep_animation_frame_five_bits);
     break;
     case 5:
-      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-22, 13, 22, sweep_animation_frame_one_bits);
+      u8g2.drawXBMP(x, SCREEN_HEIGHT-22, 13, 22, sweep_animation_frame_one_bits);
     break;
   }
 }
@@ -505,208 +574,341 @@ void draw_player_2_back_kick(uint8_t frame) {
   }
 }
 
-void draw_player_2_block(uint8_t frame) {
+void draw_left_block(uint8_t frame,int x) {
   switch (frame) {
     case 0:
       flipXBMH(walk_right_leg_contact_bits, flipBuf, 16, 22);
-      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 22, 16, 22, flipBuf);
+      u8g2.drawXBM(x, SCREEN_HEIGHT - 22, 16, 22, flipBuf);
       break;
 
     case 1:
       flipXBMH(block_frame_two_bits, flipBuf, 12, 23);
-      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 23, 12, 23, flipBuf);
+      u8g2.drawXBM(x, SCREEN_HEIGHT - 23, 12, 23, flipBuf);
       break;
 
     case 2:
       flipXBMH(block_frame_three_bits, flipBuf, 14, 23);
-      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 23, 14, 23, flipBuf);
+      u8g2.drawXBM(x, SCREEN_HEIGHT - 23, 14, 23, flipBuf);
       break;
 
     case 3:
       flipXBMH(block_frame_four_bits, flipBuf, 15, 21);
-      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 21, 15, 21, flipBuf);
+      u8g2.drawXBM(x, SCREEN_HEIGHT - 21, 15, 21, flipBuf);
       break;
   }
 }
 
-void draw_player_2_sweep(uint8_t frame) {
+void draw_right_sweep(uint8_t frame,int x) {
   switch (frame) {
     case 0:
       flipXBMH(sweep_animation_frame_one_bits, flipBuf, 13, 22);
-      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 22, 13, 22, flipBuf);
+      u8g2.drawXBM(x, SCREEN_HEIGHT - 22, 13, 22, flipBuf);
       break;
 
     case 1:
       flipXBMH(sweep_animation_frame_two_bits, flipBuf, 15, 18);
-      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 18, 15, 18, flipBuf);
+      u8g2.drawXBM(x, SCREEN_HEIGHT - 18, 15, 18, flipBuf);
       break;
 
     case 2:
       flipXBMH(sweep_animation_frame_three_bits, flipBuf, 17, 12);
-      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 12, 17, 12, flipBuf);
+      u8g2.drawXBM(x, SCREEN_HEIGHT - 12, 17, 12, flipBuf);
       break;
 
     case 3:
       flipXBMH(sweep_animation_frame_four_bits, flipBuf, 13, 21);
-      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 21, 13, 21, flipBuf);
+      u8g2.drawXBM(x, SCREEN_HEIGHT - 21, 13, 21, flipBuf);
       break;
 
     case 4:
       flipXBMH(sweep_animation_frame_five_bits, flipBuf, 15, 21);
-      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 21, 15, 21, flipBuf);
+      u8g2.drawXBM(x, SCREEN_HEIGHT - 21, 15, 21, flipBuf);
       break;
 
     case 5:
       flipXBMH(sweep_animation_frame_one_bits, flipBuf, 13, 22);
-      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 22, 13, 22, flipBuf);
+      u8g2.drawXBM(x, SCREEN_HEIGHT - 22, 13, 22, flipBuf);
       break;
   }
 }
 
 void play_front_kick(bool is_player_1) {
+  Player& player = is_player_1 ? player_1 : player_2;
 
-  if (millis() - last_time >= 180) {
-
-    frame = (frame + 1) % 5;
-
-    last_time = millis();
-
+  if (player.state != player.prev_state) {
+    player.frame = 0;
+    player.anim_last_time = millis();
+    player.prev_state = player.state;
+    player.locked = true;          
   }
 
-  if (is_player_1) {
+  if (millis() - player.anim_last_time >= 180) {
+    player.frame++;
+    player.anim_last_time = millis();
 
-    draw_player_1_front_kick(frame);
-
-  } else {
-
-    draw_player_2_front_kick(frame);
-
+    if (player.frame >= 5) {// animation finished
+      player.locked = false;
+      player.state = 0;
+      player.prev_state = 255;
+      player.frame = 0;
+      return;
+    }
   }
 
+  if (is_player_1) draw_player_1_front_kick(player.frame);
+  else             draw_player_2_front_kick(player.frame);
 }
-
 
 void play_walking(bool is_player_1) {
+  Player& player = is_player_1 ? player_1 : player_2;
 
-  if (millis() - last_time >= 180) {
+  if (player.state != player.prev_state) {
+    player.frame = 0;
+    player.anim_last_time = millis();
+    player.prev_state = player.state;
+  }
 
-    frame = (frame + 1) % 3;
-
-    last_time = millis();
-
+  if (millis() - player.anim_last_time >= 180) {
+    player.frame = (player.frame + 1) % 3;
+    player.anim_last_time = millis();
   }
 
   if (is_player_1) {
 
-    draw_player_1_walking(frame);
+    draw_player_1_walking(player.frame);
+    if(player.frame == 2 && player_1.x < 110){
+      player_1.x +=1;
+    }
 
   } else {
 
-    draw_player_2_walking(frame);
-
+    draw_player_2_walking(player.frame);
+    if(player.frame == 2 && player_2.x > 4){
+      player_2.x -=1;
+    }
   }
 
 }
 
+void play_walking_backward(bool is_player_1) {
+  Player& player = is_player_1 ? player_1 : player_2;
+
+  if (player.state != player.prev_state) {
+    player.frame = 0;
+    player.anim_last_time = millis();
+    player.prev_state = player.state;
+  }
+
+  if (millis() - player.anim_last_time >= 180) {
+    player.frame = (player.frame + 2) % 3;
+    player.anim_last_time = millis();
+  }
+
+  if (is_player_1) {
+    draw_player_1_walking(player.frame);
+    if (player.frame == 0 && player_1.x > 4) player_1.x -= 1;
+  } else {
+    draw_player_2_walking(player.frame);
+    if (player.frame == 0 && player_2.x < 110) player_2.x += 1;
+  }
+}
 
 void play_punching(bool is_player_1) {
+  Player& player = is_player_1 ? player_1 : player_2;
 
-  if (millis() - last_time >= 180) {
-
-    frame = (frame + 1) % 5;
-
-    last_time = millis();
-
+  if (player.state != player.prev_state) {
+    player.frame = 0;
+    player.anim_last_time = millis();
+    player.prev_state = player.state;
+    player.locked = true;
   }
 
-  if (is_player_1) {
+  if (millis() - player.anim_last_time >= 180) {
+    player.frame++;
+    player.anim_last_time = millis();
 
-    draw_player_1_punching(frame);
-
-  } else {
-
-    draw_player_2_punching(frame);
-
+    if (player.frame >= 5) {
+      player.locked = false;
+      player.state = 0;
+      player.prev_state = 255;
+      player.frame = 0;
+      return;
+    }
   }
 
+  if (is_player_1) draw_player_1_punching(player.frame);
+  else             draw_player_2_punching(player.frame);
 }
-
 
 void play_back_kick(bool is_player_1) {
+  Player& player = is_player_1 ? player_1 : player_2;
 
-  if (millis() - last_time >= 180) {
-
-    frame = (frame + 1) % 7;
-
-    last_time = millis();
-
+  if (player.state != player.prev_state) {
+    player.frame = 0;
+    player.anim_last_time = millis();
+    player.prev_state = player.state;
+    player.locked = true;
   }
 
-  if (is_player_1) {
+  if (millis() - player.anim_last_time >= 180) {
+    player.frame++;
+    player.anim_last_time = millis();
 
-    draw_player_1_back_kick(frame);
-
-  } else {
-
-    draw_player_2_back_kick(frame);
-
+    if (player.frame >= 7) {
+      player.locked = false;
+      player.state = 0;
+      player.prev_state = 255;
+      player.frame = 0;
+      return;
+    }
   }
 
+  if (is_player_1) draw_player_1_back_kick(player.frame);
+  else             draw_player_2_back_kick(player.frame);
+}
+
+void play_block(bool is_player_1, bool is_right, int x) {
+  Player& player = is_player_1 ? player_1 : player_2;
+
+  if (player.state != player.prev_state) {
+    player.frame = 0;
+    player.anim_last_time = millis();
+    player.prev_state = player.state;
+  }
+
+  if (millis() - player.anim_last_time >= 180) {
+    player.frame = (player.frame + 1) % 4;
+    player.anim_last_time = millis();
+  }
+
+  if (is_right) draw_right_block(player.frame, x);
+  else          draw_left_block(player.frame, x);
+}
+
+void play_sweep(bool is_player_1, bool is_left, int x) {
+  Player& player = is_player_1 ? player_1 : player_2;
+
+  if (player.state != player.prev_state) {
+    player.frame = 0;
+    player.anim_last_time = millis();
+    player.prev_state = player.state;
+    player.locked = true;
+  }
+
+  if (millis() - player.anim_last_time >= 180) {
+    player.frame++;
+    player.anim_last_time = millis();
+
+    if (player.frame >= 6) {
+      player.locked = false;
+      player.state = 0;
+      player.prev_state = 255;
+      player.frame = 0;
+      return;
+    }
+  }
+
+  if (is_left) draw_left_sweep(player.frame, x);
+  else         draw_right_sweep(player.frame, x);
+}
+
+void draw_player_1(){
+  switch (player_1.state) {
+    case 0:
+      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-24, 13, 24, player_walking_passing_pose_bits);    
+    break;
+    case 1:
+      play_walking(true);
+    break;
+    case 2:
+      //rverse the frames
+      play_walking_backward(true);
+    break;
+    case 3:
+      play_punching(true);
+    break;
+    case 4:
+      play_front_kick(true);
+    break;
+    case 5:
+      play_back_kick(true);
+    break;
+    case 6:
+      play_block(true,true,player_1.x);
+    break;
+    case 7:
+      //block-left
+      play_block(true,false,player_1.x);
+    break;
+    case 8:
+      //sweep-left
+      play_sweep(true,true, player_1.x);
+    break;
+    case 9:
+      //sweep-right
+      play_sweep(true,false, player_1.x);
+    break;
+  }
+}
+
+void draw_player_2(){
+  switch (player_2.state) {
+    case 0:
+      flipXBMH(player_walking_passing_pose_bits, flipBuf, 13, 24);
+      u8g2.drawXBMP(player_2.x, SCREEN_HEIGHT-24, 13, 24, flipBuf);    
+    break;
+    case 1:
+      play_walking(false);
+    break;
+    case 2:
+      //rverse the frames
+      play_walking_backward(false);
+    break;
+    case 3:
+      play_punching(false);
+    break;
+    case 4:
+      play_front_kick(false);
+    break;
+    case 5:
+      play_back_kick(false);
+    break;
+    case 6://block- left (normal)
+      play_block(false,true,player_2.x);
+    break;
+    case 7:
+      //block-right
+      play_block(false,false,player_2.x);
+    break;
+    case 8://I need more checks to be sure
+      //sweep-right
+      play_sweep(false,false, player_2.x);
+    break;
+    case 9://I need more checks to be sure
+      //sweep-left
+      play_sweep(false,true, player_2.x);
+    break;
+  }
 }
 
 
-void play_block(bool is_player_1) {
+void draw_healthbars(){
+  //draw player 1 health bar
+  u8g2.drawBox(0,0,(player_1.health/2),10);
 
-  if (millis() - last_time >= 180) {
+  //draw time board
 
-    frame = (frame + 1) % 4;
-
-    last_time = millis();
-
-  }
-
-  if (is_player_1) {
-
-    draw_player_1_block(frame);
-
-  } else {
-
-    draw_player_2_block(frame);
-
-  }
-
-}
-
-
-void play_sweep(bool is_player_1) {
-
-  if (millis() - last_time >= 180) {
-
-    frame = (frame + 1) % 6;
-
-    last_time = millis();
-
-  }
-
-  if (is_player_1) {
-
-    draw_player_1_sweep(frame);
-
-  } else {
-
-    draw_player_2_sweep(frame);
-
-  }
-
+  //draw player 2 health bar
+  u8g2.drawBox(78,0,(player_2.health/2),10);
 }
 
 void draw_game(){
   u8g2.firstPage();
 
   do {
-    u8g2.setFont(u8g2_font_3x5im_mr);
-    //play_block(false);
-    play_front_kick(false);
+    draw_player_1();
+    //draw_player_2();
+    draw_healthbars();
   }while (u8g2.nextPage());
 
 }
