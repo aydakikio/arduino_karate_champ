@@ -217,7 +217,7 @@ uint8_t p2_rounds_won = 0;
 //round page
 uint8_t  last_round_winner = 0;  // 0=draw, 1=p1, 2=p2
 uint32_t round_end_start   = 0;
-bool     showing_round_end = false;
+bool showing_round_end = false;
 
 struct Player{
   int health;
@@ -304,12 +304,18 @@ void loop() {
       draw_round_end_page();
       return;
     }
+
     handle_inputs();
     check_collision();
     update_round();
     draw_game();
+
   }else{
     draw_game_over_page();
+
+    if(digitalRead(BTN_PLAYER_1_ACTION)== LOW||digitalRead(BTN_PLAYER_1_RIGHT)== LOW||digitalRead(BTN_PLAYER_1_LEFT)== LOW||digitalRead(BTN_PLAYER_1_UP)== LOW|| digitalRead(BTN_PLAYER_1_DOWN)== LOW){
+      setup_game(true);
+    }
   }
 }
 
@@ -999,9 +1005,6 @@ void play_sweep(bool is_player_1, bool is_left, int x) {
   else         draw_right_sweep(player.frame, x);
 }
 
-void play_death(){
-
-}
 void draw_player_1(){
   switch (player_1.state) {
     case 0:
@@ -1113,9 +1116,9 @@ void draw_round_end_page() {
     if (elapsed < ROUND_PAGE_DELAY / 2) {
       //who won this round
       u8g2.setCursor(15, 28);
-      if      (last_round_winner == 1) u8g2.print("Player 1 Wins!");
+      if (last_round_winner == 1) u8g2.print("Player 1 Wins!");
       else if (last_round_winner == 2) u8g2.print("Player 2 Wins!");
-      else                             u8g2.print("Draw!");
+      else u8g2.print("Draw!");
 
     } else {
       // What round is that
@@ -1133,6 +1136,28 @@ void draw_round_end_page() {
   }
 }
 
-void draw_game_over_page(){
-  
+void draw_game_over_page() {
+  u8g2.firstPage();
+  do {
+    u8g2.setFont(u8g2_font_courR08_tf);
+
+    u8g2.setCursor(35, 20);
+    u8g2.print("GAME OVER");
+
+    u8g2.setCursor(37, 36);
+    if (p1_rounds_won > p2_rounds_won) u8g2.print("P1 WINS!");
+    else if (p2_rounds_won > p1_rounds_won) u8g2.print("P2 WINS!");
+    else u8g2.print("Ps DRAW!");
+
+    // round wins tally
+    u8g2.setCursor(27, 50);
+    u8g2.print("P1:");
+    u8g2.print(p1_rounds_won);
+    u8g2.print("  P2:");
+    u8g2.print(p2_rounds_won);
+
+    u8g2.setFont(u8g2_font_3x5im_mr);
+    u8g2.drawStr(25,60,"Press any button!");
+
+  }while (u8g2.nextPage());
 }
