@@ -17,8 +17,10 @@ U8G2_SH1106_128X64_NONAME_2_HW_I2C u8g2(U8G2_R0, -1, A5, A4);
 
 //others
 #define ROUND_MAX_TIME 90
+#define MAX_ROUND_COUNT 3 
 #define ANIMATION_SPEED 180 //every 180 scond changes 
 #define DEBOUNCE_MS 50
+#define ROUND_PAGE_DELAY 4000 
 
 // ===== SPRITE'S BITMAP ======
 // ==== Player walking passing pose  (13 X 24) ======
@@ -38,7 +40,7 @@ const unsigned char player_walking_right_foot_contact_pose_bits[] PROGMEM = {
 };
 
 // ==== Player right foot up  (12 X 23) ======
-const unsigned char player_walking_right_foot_up_pose_bits[] PROGMEM = {
+const unsigned char player_walking_right_foot_up_pose_bits[] PROGMEM = {//idle
 0x3C, 0x00, 0x1E, 0x00, 0x36, 0x00, 0x1C, 0x0C, 0x1E, 0x0E, 0x29, 0x0E, 
   0xC9, 0x07, 0x01, 0x06, 0x25, 0x03, 0xD9, 0x00, 0xF1, 0x00, 0xFE, 0x00, 
   0x26, 0x00, 0x45, 0x00, 0xFF, 0x00, 0x32, 0x01, 0x52, 0x01, 0x54, 0x01, 
@@ -203,10 +205,19 @@ const unsigned char sweep_animation_frame_five_bits[] PROGMEM= {
 // ===== GAME STATE =====
 int player_1_score = 0;
 int player_2_score = 0;
-uint8_t current_round = 0;
 bool game_over = false;
-bool is_round_finished = false;
-uint32_t round_timer = 90;
+
+//timer
+uint32_t round_timer = ROUND_MAX_TIME;
+uint32_t last_timer_tick = 0;
+uint8_t current_round = 1;
+uint8_t p1_rounds_won = 0;
+uint8_t p2_rounds_won = 0;
+
+//round page
+uint8_t  last_round_winner = 0;  // 0=draw, 1=p1, 2=p2
+uint32_t round_end_start   = 0;
+bool     showing_round_end = false;
 
 struct Player{
   int health;
@@ -224,10 +235,20 @@ Player player_2;
 
 static uint8_t flipBuf[66];
 
+//colision detection
+struct Box { int x, y, w, h; };
+
+static bool p1_hit_landed = false;
+static bool p2_hit_landed = false;
+
 //Forward declration
 void draw_game();
 void setup_game();
 void handle_inputs();
+void check_collision();
+void draw_round_end_page();
+void start_round();
+void update_round();
 
 void setup() {
   u8g2.begin();
@@ -239,11 +260,17 @@ void setup() {
   pinMode(BTN_PLAYER_1_RIGHT,  INPUT_PULLUP);
   pinMode(BTN_PLAYER_1_LEFT,   INPUT_PULLUP);
 
-  setup_game();
+  setup_game(true);
 }
 
-void setup_game() {
-  
+void setup_game(bool is_game_reset) {
+  if(is_game_reset){
+    p1_rounds_won = 0;
+    p2_rounds_won = 0;
+    current_round = 1;
+    game_over=false;
+  }
+
   //init player 1
   player_1.x = 10;
   player_1.health = 100;
@@ -263,14 +290,30 @@ void setup_game() {
   player_2.prev_state = 255;
   player_2.locked = false;
   player_2_score = 0;
+
+  //global
+  round_timer=ROUND_MAX_TIME;
+  last_round_winner=0;//set to tie
+
+  start_round();
 }
 
 void loop() {
-  handle_inputs();
-  draw_game();
+  if(!game_over){
+    if (showing_round_end) {
+      draw_round_end_page();
+      return;
+    }
+    handle_inputs();
+    check_collision();
+    update_round();
+    draw_game();
+  }else{
+    draw_game_over_page();
+  }
 }
 
-void handle_player_1_inputs() {
+void handle_inputs() {
   uint32_t now = millis();
   if (player_1.locked) return;
 
@@ -301,15 +344,151 @@ void handle_player_1_inputs() {
   player_1.state = ns;
 }
 
-void handle_player_2_inputs(){
+//Round settings
+void update_round() {
+  if (game_over|showing_round_end) return;
 
+  // Tick the timer down every second
+  if (millis() - last_timer_tick >= 1000) {
+    last_timer_tick = millis();
+    if (round_timer > 0) round_timer--;
+  }
+
+  // Check round end conditions
+  bool p1_dead  = player_1.health <= 0;
+  bool p2_dead  = player_2.health <= 0;
+  bool time_up  = round_timer == 0;
+
+  if (!p1_dead && !p2_dead && !time_up) return;
+
+  // Decide winner of round
+  if (p1_dead && !p2_dead) {
+    p2_rounds_won++;
+    last_round_winner=2;
+  } else if (p2_dead && !p1_dead) {
+    p1_rounds_won++;
+    last_round_winner=1;
+  } else if (time_up || (p1_dead && p2_dead)) {
+    // whoever has more health wins
+    if(player_1.health > player_2.health){
+      p1_rounds_won++; 
+      last_round_winner=1;
+    }else if (player_2.health > player_1.health){
+      p2_rounds_won++; 
+      last_round_winner=2;
+    }
+  } 
+
+  if (p1_rounds_won-p2_rounds_won >= 2 || p2_rounds_won-p1_rounds_won >= 2) {
+    game_over = true;
+    return;
+  }
+
+  // Start Round page
+  showing_round_end = true;
+  round_end_start   = millis();
+
+  current_round++;
 }
 
-void handle_inputs(){
-  handle_player_1_inputs();
-  handle_player_2_inputs();
+void start_round() {
+  player_1.health    = 100;
+  player_1.state     = 0;
+  player_1.frame     = 0;
+  player_1.prev_state = 255;
+  player_1.locked    = false;
+  player_1.x         = 30;
+
+  player_2.health    = 100;
+  player_2.state     = 0;
+  player_2.frame     = 0;
+  player_2.prev_state = 255;
+  player_2.locked    = false;
+  player_2.x         = 100;
+
+  round_timer        = ROUND_MAX_TIME;
+  last_timer_tick    = millis();
+  p1_hit_landed      = false;
+  p2_hit_landed      = false;
 }
 
+// ===== COLLISION DETECTION =====
+bool aabb(Box a, Box b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x &&
+         a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+Box get_hurtbox(Player& p) {
+  return { p.x + 1, SCREEN_HEIGHT - 22, 11, 22 };
+}
+
+// Hitbox only exists on the active impact frames
+Box get_hitbox(Player& p, bool faces_right) {
+  switch (p.state) {
+    case 3: // punch
+      if (p.frame == 3 || p.frame == 4)
+        return { faces_right ? p.x + 13 : p.x - 8, SCREEN_HEIGHT - 18, 8, 8 };
+      break;
+    case 4: // front kick
+      if (p.frame == 2 || p.frame == 3)
+        return { faces_right ? p.x + 10 : p.x - 10, SCREEN_HEIGHT - 20, 10, 10 };
+      break;
+    case 5: // back kick
+      if (p.frame == 3)
+        return { faces_right ? p.x - 8 : p.x + 13, SCREEN_HEIGHT - 16, 10, 8 };
+      break;
+    case 8:
+    case 9: // sweep
+      if (p.frame >= 1 && p.frame <= 3)
+        return { faces_right ? p.x + 13 : p.x - 17, SCREEN_HEIGHT - 12, 17, 12 };
+      break;
+  }
+  return { 0, 0, 0, 0 }; // no active hitbox
+}
+
+int get_attack_damage(Player& p) {
+  switch (p.state) {
+    case 3: if (p.frame == 3 || p.frame == 4) return 8;  break; // punch
+    case 4: if (p.frame == 2 || p.frame == 3) return 12; break; // front kick
+    case 5: if (p.frame == 3)                 return 15; break; // back kick
+    case 8:
+    case 9: if (p.frame >= 1 && p.frame <= 3) return 10; break; // sweep
+  }
+  return 0;
+}
+
+void check_collision() {
+  Box p1_hurt = get_hurtbox(player_1);
+  Box p2_hurt = get_hurtbox(player_2);
+  Box p1_hit  = get_hitbox(player_1, true);   // p1 faces right
+  Box p2_hit  = get_hitbox(player_2, false);  // p2 faces left
+
+  // P1 attacks P2
+  if (!p1_hit_landed && p1_hit.w > 0 && aabb(p1_hit, p2_hurt)) {
+    int dmg = get_attack_damage(player_1);
+    if (dmg > 0) {
+      bool blocked = (player_2.state == 6 || player_2.state == 7);
+      player_2.health = max(0, player_2.health - (blocked ? max(1, dmg / 4) : dmg));
+      p1_hit_landed = true;
+    }
+  }
+
+  // P2 attacks P1
+  if (!p2_hit_landed && p2_hit.w > 0 && aabb(p2_hit, p1_hurt)) {
+    int dmg = get_attack_damage(player_2);
+    if (dmg > 0) {
+      bool blocked = (player_1.state == 6 || player_1.state == 7);
+      player_1.health = max(0, player_1.health - (blocked ? max(1, dmg / 4) : dmg));
+      p2_hit_landed = true;
+    }
+  }
+
+  // Reset hit flag when attack leaves its active frames
+  if (get_attack_damage(player_1) == 0) p1_hit_landed = false;
+  if (get_attack_damage(player_2) == 0) p2_hit_landed = false;
+}
+
+//Graphics
 static inline uint8_t reverseBits(uint8_t b) {
     b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
     b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
@@ -820,17 +999,19 @@ void play_sweep(bool is_player_1, bool is_left, int x) {
   else         draw_right_sweep(player.frame, x);
 }
 
+void play_death(){
+
+}
 void draw_player_1(){
   switch (player_1.state) {
     case 0:
-      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-24, 13, 24, player_walking_passing_pose_bits);    
+      u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-23, 12, 24, player_walking_right_foot_up_pose_bits);
     break;
     case 1:
-      play_walking(true);
+      play_walking_backward(true);
     break;
     case 2:
-      //rverse the frames
-      play_walking_backward(true);
+      play_walking(true);
     break;
     case 3:
       play_punching(true);
@@ -862,15 +1043,14 @@ void draw_player_1(){
 void draw_player_2(){
   switch (player_2.state) {
     case 0:
-      flipXBMH(player_walking_passing_pose_bits, flipBuf, 13, 24);
-      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 24, 13, 24, flipBuf);
+      flipXBMH(player_walking_right_foot_up_pose_bits, flipBuf, 12, 24);
+      u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 23, 12, 24, flipBuf);
     break;
     case 1:
-      play_walking(false);
+      play_walking_backward(false);
     break;
     case 2:
-      //rverse the frames
-      play_walking_backward(false);
+      play_walking(false);
     break;
     case 3:
       play_punching(false);
@@ -923,8 +1103,34 @@ void draw_game(){
   }while (u8g2.nextPage());
 }
 
-void draw_round_end_page(){
+void draw_round_end_page() {
+  uint32_t elapsed = millis() - round_end_start;
 
+  u8g2.firstPage();
+  do {
+    u8g2.setFont(u8g2_font_courR08_tf);
+
+    if (elapsed < ROUND_PAGE_DELAY / 2) {
+      //who won this round
+      u8g2.setCursor(15, 28);
+      if      (last_round_winner == 1) u8g2.print("Player 1 Wins!");
+      else if (last_round_winner == 2) u8g2.print("Player 2 Wins!");
+      else                             u8g2.print("Draw!");
+
+    } else {
+      // What round is that
+      u8g2.setCursor(30, 28);
+      u8g2.print("Round ");
+      u8g2.print(current_round);
+    }
+
+  } while (u8g2.nextPage());
+
+  // Transition after full delay
+  if (elapsed >= ROUND_PAGE_DELAY) {
+    showing_round_end = false;
+    start_round();
+  }
 }
 
 void draw_game_over_page(){
