@@ -264,15 +264,16 @@ void setup() {
 }
 
 void setup_game(bool is_game_reset) {
-  if(is_game_reset){
-    p1_rounds_won = 0;
-    p2_rounds_won = 0;
-    current_round = 1;
-    game_over=false;
+  if (is_game_reset) {
+    p1_rounds_won  = 0;
+    p2_rounds_won  = 0;
+    current_round  = 1;
+    game_over      = false;
+    player_1_score = 0;
+    player_2_score = 0;
   }
 
-  //init player 1
-  player_1.x = 10;
+  player_1.x = 10;           
   player_1.health = 100;
   player_1.state = 0;
   player_1.frame = 0;
@@ -281,8 +282,7 @@ void setup_game(bool is_game_reset) {
   player_1.locked = false;
   player_1_score = 0;
 
-  //init player 2
-  player_2.x = 110;
+  player_2.x = 110;          
   player_2.health = 100;
   player_2.state = 0;
   player_2.frame = 0;
@@ -291,11 +291,11 @@ void setup_game(bool is_game_reset) {
   player_2.locked = false;
   player_2_score = 0;
 
-  //global
-  round_timer=ROUND_MAX_TIME;
-  last_round_winner=0;//set to tie
-
-  start_round();
+  round_timer       = ROUND_MAX_TIME;
+  last_timer_tick   = millis();
+  last_round_winner = 0;
+  p1_hit_landed     = false;
+  p2_hit_landed     = false;
 }
 
 void loop() {
@@ -395,27 +395,6 @@ void update_round() {
   round_end_start   = millis();
 
   current_round++;
-}
-
-void start_round() {
-  player_1.health    = 100;
-  player_1.state     = 0;
-  player_1.frame     = 0;
-  player_1.prev_state = 255;
-  player_1.locked    = false;
-  player_1.x         = 30;
-
-  player_2.health    = 100;
-  player_2.state     = 0;
-  player_2.frame     = 0;
-  player_2.prev_state = 255;
-  player_2.locked    = false;
-  player_2.x         = 100;
-
-  round_timer        = ROUND_MAX_TIME;
-  last_timer_tick    = millis();
-  p1_hit_landed      = false;
-  p2_hit_landed      = false;
 }
 
 // ===== COLLISION DETECTION =====
@@ -1132,7 +1111,7 @@ void draw_round_end_page() {
   // Transition after full delay
   if (elapsed >= ROUND_PAGE_DELAY) {
     showing_round_end = false;
-    start_round();
+    setup_game(false); 
   }
 }
 
