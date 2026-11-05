@@ -1,2 +1,7 @@
 /ai_training/.venv
 /ai_training/.idea
+
+*/__pycache__
+
+__pycache__/
+*.py[cod]
