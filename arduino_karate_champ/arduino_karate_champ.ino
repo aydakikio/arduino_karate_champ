@@ -1,4 +1,5 @@
 #include <U8g2lib.h>
+#include "karate_ai.h"
 
 // ===== HARDWARE CONFIGURATION =====
 U8G2_SH1106_128X64_NONAME_2_HW_I2C u8g2(U8G2_R0, -1, A5, A4);
@@ -243,12 +244,14 @@ static bool p2_hit_landed = false;
 
 //Forward declration
 void draw_game();
-void setup_game();
+void setup_game(bool is_game_reset);   // FIX 1: was "void setup_game();"
 void handle_inputs();
 void check_collision();
 void draw_round_end_page();
+void draw_game_over_page();
 void start_round();
 void update_round();
+void update_ai();
 
 void setup() {
   u8g2.begin();
@@ -273,7 +276,7 @@ void setup_game(bool is_game_reset) {
     player_2_score = 0;
   }
 
-  player_1.x = 10;           
+  player_1.x = 30;           // FIX 2: training start position (was 10)
   player_1.health = 100;
   player_1.state = 0;
   player_1.frame = 0;
@@ -282,7 +285,7 @@ void setup_game(bool is_game_reset) {
   player_1.locked = false;
   player_1_score = 0;
 
-  player_2.x = 110;          
+  player_2.x = 100;          // FIX 2: training start position (was 110)
   player_2.health = 100;
   player_2.state = 0;
   player_2.frame = 0;
@@ -306,6 +309,7 @@ void loop() {
     }
 
     handle_inputs();
+    update_ai();
     check_collision();
     update_round();
     draw_game();
@@ -352,7 +356,7 @@ void handle_inputs() {
 
 //Round settings
 void update_round() {
-  if (game_over|showing_round_end) return;
+  if (game_over || showing_round_end) return;   // FIX 4: was "|"
 
   // Tick the timer down every second
   if (millis() - last_timer_tick >= 1000) {
@@ -395,6 +399,43 @@ void update_round() {
   round_end_start   = millis();
 
   current_round++;
+}
+
+// ===== AI CONFIGURATION =====
+#define AI_UPDATE_INTERVAL 167
+
+uint32_t last_ai_update = 0;
+
+void update_ai() {
+
+    uint32_t now = millis();
+
+    if (now - last_ai_update < AI_UPDATE_INTERVAL)
+        return;
+
+    last_ai_update = now;
+
+    // Don't interrupt an active attack animation
+    if (player_2.locked)
+        return;
+
+    // Convert remaining time to the network's expected range
+    uint8_t time_left = (round_timer * 127UL) / ROUND_MAX_TIME;
+
+    uint8_t action = kai_choose_action(
+        0,                  // AI controls P2
+        player_1.x,
+        player_2.x,
+        player_2.health,
+        player_1.health,
+        player_2.state,
+        player_2.frame,
+        player_1.state,
+        player_1.frame,
+        time_left
+    );
+
+    player_2.state = action;
 }
 
 // ===== COLLISION DETECTION =====
@@ -987,6 +1028,8 @@ void play_sweep(bool is_player_1, bool is_left, int x) {
 void draw_player_1(){
   switch (player_1.state) {
     case 0:
+      player_1.frame = 0;          // FIX 3: idle reports frame 0
+      player_1.prev_state = 255;   // FIX 3
       u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-23, 12, 24, player_walking_right_foot_up_pose_bits);
     break;
     case 1:
@@ -1025,6 +1068,8 @@ void draw_player_1(){
 void draw_player_2(){
   switch (player_2.state) {
     case 0:
+      player_2.frame = 0;          // FIX 3: idle reports frame 0
+      player_2.prev_state = 255;   // FIX 3
       flipXBMH(player_walking_right_foot_up_pose_bits, flipBuf, 12, 24);
       u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 23, 12, 24, flipBuf);
     break;
