@@ -9,6 +9,7 @@ vector can be built on the Arduino from its own game variables:
   4 opp_dist_to_own_wall        5 my_frame*20       6 opp_frame*20
   7 time_left (0..127)          8 me_is_player_1 (127/0)
   9..18  one-hot(my_state)*127  19..28 one-hot(opp_state)*127
+  29..32 one-hot(my LAST attack type: punch, front kick, back kick, sweep)*127 (all 0 = none yet)
 """
 import random
 
@@ -24,15 +25,16 @@ P1_ATTACK_PROBS = (0.5, 0.3, 0.2)
 (IDLE, WALK_BACK, WALK_FWD, PUNCH, FRONT_KICK, BACK_KICK,
  BLOCK_R, BLOCK_L, SWEEP_L, SWEEP_R) = range(10)
 N_ACTIONS = 10
-N_FEATURES = 29
+N_FEATURES = 33
 ANIM_LEN = (1, 3, 3, 5, 5, 7, 4, 4, 6, 6)
 LOOPING = (1, 1, 1, 0, 0, 0, 1, 1, 0, 0)
 ATTACK = (0, 0, 0, 1, 1, 1, 0, 0, 1, 1)
 BLOCK = (0, 0, 0, 0, 0, 0, 1, 1, 0, 0)
+ATK_TYPE = (0, 0, 0, 1, 2, 3, 0, 0, 4, 4)   # 1 punch, 2 front kick, 3 back kick, 4 sweep (L/R are the same)
 
 
 class Fighter:
-    __slots__ = ("x", "hp", "st", "fr", "locked", "landed")
+    __slots__ = ("x", "hp", "st", "fr", "locked", "landed", "last")
 
     def __init__(self, x):
         self.x = x
@@ -41,6 +43,7 @@ class Fighter:
         self.fr = 0
         self.locked = False
         self.landed = False
+        self.last = 0          # type of the last attack this fighter started (0 = none)
 
 
 def attack_damage(st, fr):
@@ -86,19 +89,25 @@ class Fight:
         self.p = (Fighter(30), Fighter(100))
         self.steps = 0
         self.term = self.trunc = False
+        self.rep = (0, 0)   # 1 if that player just started the same attack type as their previous one
         self.res = 0   # +1: P1 ahead / won, -1: P2 ahead / won, 0: draw (valid once done)
 
     # -- helpers -----------------------------------------------------------
     @staticmethod
     def _set(p, new):
         if p.locked:
-            return
+            return 0
         if new != p.st:
             p.fr = 0
             p.landed = False
         p.st = new
+        rep = 0
         if ATTACK[new]:
             p.locked = True
+            t = ATK_TYPE[new]
+            rep = 1 if t == p.last else 0
+            p.last = t
+        return rep
 
     @staticmethod
     def _apply(att, dfn):
@@ -144,8 +153,9 @@ class Fight:
     def step(self, a1, a2):
         """Returns (dmg_by_p1, dmg_by_p2).  Sets self.term / trunc / res."""
         p1, p2 = self.p
-        self._set(p2, a2)
-        self._set(p1, a1)
+        r2 = self._set(p2, a2)
+        r1 = self._set(p1, a1)
+        self.rep = (r1, r2)
 
         h1 = hitbox(p1, True)
         h2 = hitbox(p2, False)
@@ -211,6 +221,8 @@ def features(f, seat):
     v[8] = 127 if seat == 0 else 0
     v[9 + me.st] = 127
     v[19 + op.st] = 127
+    if me.last:
+        v[28 + me.last] = 127
     return v
 
 

@@ -126,6 +126,10 @@ def main():
     ap.add_argument("--frozen", default=None, help="train an EXPLOITER against this frozen pickle (greedy)")
     ap.add_argument("--p_script", type=float, default=0.10)
     ap.add_argument("--p_bots", type=float, default=0.15, help="idle/random/block/walk bots")
+    ap.add_argument("--rep_pen", type=float, default=4.0, help="penalty (env reward units) for starting the same attack type twice in a row")
+    ap.add_argument("--init", default=None, help="warm-start policy from a snapshot pickle (29-input v1 nets are zero-padded)")
+    ap.add_argument("--vf_warmup", type=int, default=0, help="iterations to train only the value net first")
+    ap.add_argument("--ent0", type=float, default=0.012, help="initial entropy bonus extra (decays to 0)")
     ap.add_argument("--draw_pen", type=float, default=6.0, help="penalty (env reward units) for a drawn timeout")
     ap.add_argument("--snap_every", type=int, default=15)
     a = ap.parse_args()
@@ -133,7 +137,14 @@ def main():
     rng = np.random.default_rng(a.seed)
     gamma, lam, clip_eps, epochs, mbs = 0.97, 0.95, 0.2, 4, 512
 
-    pi = MLP([N_FEATURES, a.hid, N_ACTIONS], rng, last_gain=0.01)
+    if a.init:
+        with open(a.init, "rb") as fh: iW, ib = pickle.load(fh)
+        a.hid = iW[0].shape[1]
+        pi = MLP([N_FEATURES, a.hid, N_ACTIONS], rng)
+        W1 = np.zeros((N_FEATURES, a.hid), np.float32); W1[:iW[0].shape[0]] = iW[0]   # new inputs start at weight 0
+        pi.W = [W1, iW[1].copy()]; pi.b = [ib[0].copy(), ib[1].copy()]
+    else:
+        pi = MLP([N_FEATURES, a.hid, N_ACTIONS], rng, last_gain=0.01)
     vf = MLP([N_FEATURES, 64, 64, 1], rng, last_gain=1.0)
     opt_pi, opt_vf = Adam(pi.params()), Adam(vf.params())
     pool = [pi.snapshot()]
@@ -160,11 +171,12 @@ def main():
     ep_len = []
     t0 = time.time()
     last_eval = None
+    atk = np.zeros(4)
 
     for it in range(1, a.iters + 1):
         frac = 1 - (it - 1) / a.iters
         lr = a.lr * (0.15 + 0.85 * frac)
-        ent_c = 0.003 + 0.012 * frac
+        ent_c = 0.003 + a.ent0 * frac
         OB = np.zeros((T, E, N_FEATURES), np.float32); AC = np.zeros((T, E), np.int64)
         LP = np.zeros((T, E), np.float32); VA = np.zeros((T, E), np.float32)
         RW = np.zeros((T, E), np.float32); DN = np.zeros((T, E), np.float32); MK = np.zeros((T, E), np.float32)
@@ -177,6 +189,8 @@ def main():
             OB[t] = Xl; AC[t] = act; LP[t] = lp_all[np.arange(E), act]
             VA[t] = vf.forward(Xl)[-1][:, 0]
             MK[t] = [0.0 if f.p[s].locked else 1.0 for f, s in zip(fights, seats)]
+            for i in range(E):
+                if MK[t, i] and ATTACK[act[i]]: atk[ATK_TYPE[act[i]] - 1] += 1
 
             opp_seats = [1 - s for s in seats]
             Xo = obs_batch(fights, opp_seats)
@@ -191,7 +205,8 @@ def main():
                 a12 = [0, 0]; a12[sd] = int(act[i]); a12[1 - sd] = int(oact[i])
                 d1, d2 = f.step(a12[0], a12[1])
                 dealt, taken = (d1, d2) if sd == 0 else (d2, d1)
-                r = (dealt - taken + f.terminal_bonus(sd) - (a.draw_pen if (f.trunc and f.res == 0) else 0.0)) / 10.0
+                r = (dealt - taken + f.terminal_bonus(sd) - (a.draw_pen if (f.trunc and f.res == 0) else 0.0)
+                     - (a.rep_pen if f.rep[sd] else 0.0)) / 10.0
                 RW[t, i] = r
                 if f.term or f.trunc:
                     DN[t, i] = 1.0
@@ -230,7 +245,8 @@ def main():
                 dlg = (-advb * ratio * active * w)[:, None] * (onehot - p)
                 H = -(p * lpa).sum(1)
                 dlg += ent_c * w[:, None] * p * (lpa + H[:, None])
-                opt_pi.step(pi.params(), pi.backward(hs, dlg.astype(np.float32)), lr)
+                if it > a.vf_warmup:
+                    opt_pi.step(pi.params(), pi.backward(hs, dlg.astype(np.float32)), lr)
 
                 hv = vf.forward(xb)
                 dv = ((hv[-1][:, 0] - retb) / len(ix))[:, None].astype(np.float32)
@@ -247,7 +263,9 @@ def main():
             if frozen_agent is not None: ev["frozen"] = evaluate(greedy, frozen_agent)
             tr = " ".join(f"{k}:{np.mean(v[-100:]):.2f}" for k, v in sorted(stats.items()))
             print(f"it {it:4d} | {time.time()-t0:5.0f}s | eplen {np.mean(ep_len[-100:]):5.0f} | train-WR {tr} | "
+                  f"atk% P/FK/BK/SW {' '.join(f'{100*x/max(atk.sum(),1):.0f}' for x in atk)} | "
                   f"greedy-eval " + " ".join(f"{k}:{v:.2f}" for k, v in ev.items()), flush=True)
+            atk[:] = 0
             with open(f"{a.out}/ckpt_{it:05d}.pkl", "wb") as fh: pickle.dump(pi.snapshot(), fh)
     with open(f"{a.out}/final.pkl", "wb") as fh: pickle.dump(pi.snapshot(), fh)
     with open(f"{a.out}/pool.pkl", "wb") as fh: pickle.dump(pool, fh)

@@ -236,6 +236,9 @@ Player player_2;
 
 static uint8_t flipBuf[66];
 
+// AI: last attack type the AI (player 2) started: 0 none, 1 punch, 2 front kick, 3 back kick, 4 sweep
+uint8_t ai_last_atk = 0;
+
 //colision detection
 struct Box { int x, y, w, h; };
 
@@ -255,6 +258,8 @@ void update_ai();
 
 void setup() {
   u8g2.begin();
+
+  randomSeed(analogRead(A0));   // AI: so the sampled choices differ between power-ups (A0 is unused/floating)
 
   //player 1 buttons
   pinMode(BTN_PLAYER_1_ACTION, INPUT_PULLUP);
@@ -293,6 +298,8 @@ void setup_game(bool is_game_reset) {
   player_2.prev_state = 255;
   player_2.locked = false;
   player_2_score = 0;
+
+  ai_last_atk = 0;           // AI: new round -> no previous attack
 
   round_timer       = ROUND_MAX_TIME;
   last_timer_tick   = millis();
@@ -406,6 +413,18 @@ void update_round() {
 
 uint32_t last_ai_update = 0;
 
+// AI: map a state id to the network's attack type (0 = not an attack)
+uint8_t atk_type(uint8_t s) {
+  switch (s) {
+    case 3:  return 1;   // punch
+    case 4:  return 2;   // front kick
+    case 5:  return 3;   // back kick
+    case 8:
+    case 9:  return 4;   // sweep (either side)
+    default: return 0;
+  }
+}
+
 void update_ai() {
 
     uint32_t now = millis();
@@ -422,7 +441,8 @@ void update_ai() {
     // Convert remaining time to the network's expected range
     uint8_t time_left = (round_timer * 127UL) / ROUND_MAX_TIME;
 
-    uint8_t action = kai_choose_action(
+    // AI: sampled chooser (harder to exploit than argmax) + last attack input
+    uint8_t action = kai_choose_action_sampled(
         0,                  // AI controls P2
         player_1.x,
         player_2.x,
@@ -432,8 +452,13 @@ void update_ai() {
         player_2.frame,
         player_1.state,
         player_1.frame,
-        time_left
+        time_left,
+        ai_last_atk,
+        (uint16_t)random(0, 65536)
     );
+
+    uint8_t t = atk_type(action);
+    if (t) ai_last_atk = t;     // AI: remember the attack we just started
 
     player_2.state = action;
 }
