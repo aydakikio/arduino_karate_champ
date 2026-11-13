@@ -236,7 +236,7 @@ Player player_2;
 
 static uint8_t flipBuf[66];
 
-// AI: last attack type the AI (player 2) started: 0 none, 1 punch, 2 front kick, 3 back kick, 4 sweep
+//last attack type the AI started: 0 none, 1 punch, 2 front kick, 3 back kick, 4 sweep
 uint8_t ai_last_atk = 0;
 
 //colision detection
@@ -245,7 +245,7 @@ struct Box { int x, y, w, h; };
 static bool p1_hit_landed = false;
 static bool p2_hit_landed = false;
 
-//Forward declration
+//Forward declaration
 void draw_game();
 void setup_game(bool is_game_reset); 
 void handle_inputs();
@@ -471,7 +471,6 @@ Box get_hurtbox(Player& p) {
   return { p.x + 1, SCREEN_HEIGHT - 22, 11, 22 };
 }
 
-// Hitbox only exists on the active impact frames
 Box get_hitbox(Player& p, bool faces_right) {
   switch (p.state) {
     case 3: // punch
@@ -1051,8 +1050,8 @@ void play_sweep(bool is_player_1, bool is_left, int x) {
 void draw_player_1(){
   switch (player_1.state) {
     case 0:
-      player_1.frame = 0;          // FIX 3: idle reports frame 0
-      player_1.prev_state = 255;   // FIX 3
+      player_1.frame = 0;   
+      player_1.prev_state = 255;
       u8g2.drawXBMP(player_1.x, SCREEN_HEIGHT-23, 12, 24, player_walking_right_foot_up_pose_bits);
     break;
     case 1:
@@ -1091,8 +1090,8 @@ void draw_player_1(){
 void draw_player_2(){
   switch (player_2.state) {
     case 0:
-      player_2.frame = 0;          // FIX 3: idle reports frame 0
-      player_2.prev_state = 255;   // FIX 3
+      player_2.frame = 0;          
+      player_2.prev_state = 255;   
       flipXBMH(player_walking_right_foot_up_pose_bits, flipBuf, 12, 24);
       u8g2.drawXBM(player_2.x, SCREEN_HEIGHT - 23, 12, 24, flipBuf);
     break;
@@ -1111,18 +1110,18 @@ void draw_player_2(){
     case 5:
       play_back_kick(false);
     break;
-    case 6://block- left (normal)
+    case 6://block- left
       play_block(false,true,player_2.x);
     break;
     case 7:
       //block-right
       play_block(false,false,player_2.x);
     break;
-    case 8://I need more checks to be sure
+    case 8:
       //sweep-right
       play_sweep(false,false, player_2.x);
     break;
-    case 9://I need more checks to be sure
+    case 9:
       //sweep-left
       play_sweep(false,true, player_2.x);
     break;
