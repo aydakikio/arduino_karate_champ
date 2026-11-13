@@ -247,7 +247,7 @@ static bool p2_hit_landed = false;
 
 //Forward declration
 void draw_game();
-void setup_game(bool is_game_reset);   // FIX 1: was "void setup_game();"
+void setup_game(bool is_game_reset); 
 void handle_inputs();
 void check_collision();
 void draw_round_end_page();
@@ -259,7 +259,7 @@ void update_ai();
 void setup() {
   u8g2.begin();
 
-  randomSeed(analogRead(A0));   // AI: so the sampled choices differ between power-ups (A0 is unused/floating)
+  randomSeed(analogRead(A0));
 
   //player 1 buttons
   pinMode(BTN_PLAYER_1_ACTION, INPUT_PULLUP);
@@ -281,7 +281,7 @@ void setup_game(bool is_game_reset) {
     player_2_score = 0;
   }
 
-  player_1.x = 30;           // FIX 2: training start position (was 10)
+  player_1.x = 30;           
   player_1.health = 100;
   player_1.state = 0;
   player_1.frame = 0;
@@ -290,7 +290,7 @@ void setup_game(bool is_game_reset) {
   player_1.locked = false;
   player_1_score = 0;
 
-  player_2.x = 100;          // FIX 2: training start position (was 110)
+  player_2.x = 100;         
   player_2.health = 100;
   player_2.state = 0;
   player_2.frame = 0;
@@ -299,7 +299,7 @@ void setup_game(bool is_game_reset) {
   player_2.locked = false;
   player_2_score = 0;
 
-  ai_last_atk = 0;           // AI: new round -> no previous attack
+  ai_last_atk = 0;    
 
   round_timer       = ROUND_MAX_TIME;
   last_timer_tick   = millis();
@@ -352,7 +352,6 @@ void handle_inputs() {
   else if (left)                    ns = 1;
   else                              ns = 0;
 
-  // only debounce on state *changes*, not every frame
   if (ns != player_1.state) {
     if (now - player_1.last_pressed_time < DEBOUNCE_MS) return;
     player_1.last_pressed_time = now;
@@ -363,7 +362,7 @@ void handle_inputs() {
 
 //Round settings
 void update_round() {
-  if (game_over || showing_round_end) return;   // FIX 4: was "|"
+  if (game_over || showing_round_end) return;  
 
   // Tick the timer down every second
   if (millis() - last_timer_tick >= 1000) {
@@ -441,9 +440,8 @@ void update_ai() {
     // Convert remaining time to the network's expected range
     uint8_t time_left = (round_timer * 127UL) / ROUND_MAX_TIME;
 
-    // AI: sampled chooser (harder to exploit than argmax) + last attack input
     uint8_t action = kai_choose_action_sampled(
-        0,                  // AI controls P2
+        0,                 
         player_1.x,
         player_2.x,
         player_2.health,
@@ -458,7 +456,7 @@ void update_ai() {
     );
 
     uint8_t t = atk_type(action);
-    if (t) ai_last_atk = t;     // AI: remember the attack we just started
+    if (t) ai_last_atk = t; 
 
     player_2.state = action;
 }
@@ -494,7 +492,7 @@ Box get_hitbox(Player& p, bool faces_right) {
         return { faces_right ? p.x + 13 : p.x - 17, SCREEN_HEIGHT - 12, 17, 12 };
       break;
   }
-  return { 0, 0, 0, 0 }; // no active hitbox
+  return { 0, 0, 0, 0 }; 
 }
 
 int get_attack_damage(Player& p) {
